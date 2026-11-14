@@ -1,0 +1,18 @@
+# This is a requirements file for a Python project. It lists the dependencies needed to run the project, along with their specific versions.
+# Note: The versions specified here are the ones that have been tested and are known to work with the project. If you need to update any of these packages, please ensure compatibility with the rest of the codebase.  
+
+fastapi==0.163.0
+uvicorn==0.22.0
+python-multipart==0.0.33
+python-dotenv==1.2.4
+pydantic==2.0.0
+langchain==0.0.314
+numpy==1.24.3
+pandas==2.0.3
+matplotlib==3.7.1
+seaborn==0.12.2
+scikit-learn==1.2.2
+transformers==4.28.0
+torch==2.0.1 
+
+

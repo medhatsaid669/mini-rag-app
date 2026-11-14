@@ -48,7 +48,7 @@ Set your environment variables in the `.env` file. Like `OPENAI_API_KEY` value.
 
 ```bash
 $ cd docker
-$ cp .env.example .env
+$ cp assets/.env.example .env
 ```
 
 - update `.env` with your credentials

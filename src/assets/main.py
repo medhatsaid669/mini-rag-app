@@ -5,7 +5,7 @@ load_dotenv(".env")  # Load environment variables from .env file
 
 #from routes.base import base_router  # pyright: ignore[reportMissingImports]
 
-from routes import base 
+from src.assets.routes import base 
 
 app = FastAPI() 
 

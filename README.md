@@ -65,6 +65,9 @@ $ sudo docker compose up -d
 ```bash
 $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
+"""
+PYTHONPATH=$PWD:$PWD/assets uvicorn assets.main:app --reload --host 0.0.0.0 --port 5000
+"""
 
 ## POSTMAN Collection
 

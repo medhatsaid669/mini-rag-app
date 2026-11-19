@@ -53,3 +53,4 @@ async def upload_data(project_id: str, file: UploadFile = File(...),
             "data": {"file_path": file_path}
         }
     )
+

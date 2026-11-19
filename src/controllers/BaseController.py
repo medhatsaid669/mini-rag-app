@@ -1,6 +1,12 @@
 from helpers.config import get_settings, Settings  # pyright: ignore[reportMissingImports]
+import os  # pyright: ignore[reportMissingImports]
+
 
 class BaseController:
     def __init__(self):
         self.app_settings = get_settings()
-        self.size_scale = 1048576  # 1 MB in bytes 1024x1024
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.file_dir = os.path.join(self.base_dir, "assets", "files")
+     
+
+

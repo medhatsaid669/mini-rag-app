@@ -1,6 +1,9 @@
 from fastapi import APIRouter, FastAPI, Depends, UploadFile, File  # pyright: ignore[reportMissingImports]
 import os  # pyright: ignore[reportMissingImports]
 from .BaseController import BaseController
+from .ProjectController import ProjectController
+from models.enums.ResponseEnums import ResponseSignal
+
 
 class DataController(BaseController):
     def __init__(self):
@@ -11,7 +14,8 @@ class DataController(BaseController):
     def validate_uploaded_file(self, file: UploadFile):
         # Validate the file properties based on the settings
         if file.content_type not in self.app_settings.ALLOWED_FILE_TYPES:
-            raise ValueError(f"Invalid file type: {file.content_type}. Allowed types: {self.app_settings.ALLOWED_FILE_TYPES}")  
+            return ResponseSignal.file_type_supported.value, False
         if file.size > self.size_scale:
-            raise ValueError("File size exceeds the allowed limit.")
-        return True 
+            return ResponseSignal.file_size_exceeded.value, False
+        return ResponseSignal.file_valid.value, True  
+    

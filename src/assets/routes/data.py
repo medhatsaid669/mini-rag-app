@@ -3,7 +3,11 @@ from fastapi.responses import JSONResponse  # pyright: ignore[reportMissingImpor
 import os  # pyright: ignore[reportMissingImports]
 from helpers.config import get_settings, Settings # pyright: ignore[reportMissingImports]    
 from controllers import DataController  # pyright: ignore[reportMissingImports]
-import aiofiles 
+import aiofiles  # pyright: ignore[reportMissingImports, reportMissingModuleSource]
+from models import ResponseSignal
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 data_router = APIRouter(
     prefix="/api/v1/data",
@@ -28,13 +32,24 @@ async def upload_data(project_id: str, file: UploadFile = File(...),
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, file.filename)
 
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
+
+    try:
+        async with aiofiles.open(file_path, "wb") as f:
+            while chunk := await file.read(app_settings.FILE_DEFAULT_CHUNK_SIZE):   
+                await f.write(chunk)
+    except Exception as e:
+        logging.error(f"Error occurred while uploading file: {str(e)}") 
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"message": f"Error occurred while uploading file: {str(e)}"}
+        )
+
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"message": "File uploaded successfully.", "file_path": file_path}
-    )  
-
-    project_dir_path = ProjectController().get_project_path(project_id) 
-    file_path = os.path.join(project_dir_path, file.filename)   
+        content={ 
+            "signal": ResponseSignal.SUCCESS.value,
+            "message": f"File '{file.filename}' uploaded successfully to project '{project_id}'.",
+            "data": {"file_path": file_path}
+        }
+    )

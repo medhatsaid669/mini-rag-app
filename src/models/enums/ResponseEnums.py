@@ -7,4 +7,6 @@ class ResponseSignal(str, Enum):
         file_size_exceeded = "File size exceeds the allowed limit."
         file_upload_success = "File uploaded successfully."
         file_upload_failed = "File upload failed."
+        file_valid = "File is valid."
+        SUCCESS = "Success"
 

@@ -74,4 +74,6 @@ PYTHONPATH=$PWD:$PWD/assets uvicorn assets.main:app --reload --host 0.0.0.0 --po
 Download the POSTMAN collection from [/assets/mini-rag-app.postman_collection.json](/assets/mini-rag-app.postman_collection.json)
 
 
-
+"""
+cd "/mnt/c/Users/ASUS/OneDrive/Desktop/Python Exercise/mini-rag-app/src"
+"""

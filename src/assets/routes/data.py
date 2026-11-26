@@ -1,11 +1,15 @@
+from urllib import request
+
 from fastapi import APIRouter, FastAPI, Depends, UploadFile, File, status  # pyright: ignore[reportMissingImports]
 from fastapi.responses import JSONResponse  # pyright: ignore[reportMissingImports]
 import os  # pyright: ignore[reportMissingImports]
 from helpers.config import get_settings, Settings # pyright: ignore[reportMissingImports]    
-from controllers import DataController  # pyright: ignore[reportMissingImports]
+from controllers import DataController, ProcessController  # pyright: ignore[reportMissingImports]
 import aiofiles  # pyright: ignore[reportMissingImports, reportMissingModuleSource]
 from models import ResponseSignal
 import logging
+from .schemes.data import ProcessDataRequest  # pyright: ignore[reportMissingImports]   
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -53,4 +57,27 @@ async def upload_data(project_id: str, file: UploadFile = File(...),
             "data": {"file_path": file_path}
         }
     )
+
+@data_router.post("/process/{project_id}")
+async def process_data(project_id: str, request: ProcessDataRequest, 
+        data_controller: DataController = Depends(DataController),
+        app_settings: Settings = Depends(get_settings)): 
+
+        process_controller = ProcessController(project_id, request.file_id, request.chunk_size, request.overlap_size, request.do_reset)   
+        file_content = process_controller.get_file_cotent(request.file_id)
+        chunks, file_content_texts, file_content_metadata = process_controller.process_file_content(request.file_id, file_content, request.chunk_size, request.overlap_size)    
+
+        if file_chunks := chunks:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "signal": ResponseSignal.SUCCESS.value,
+                    "message": f"File '{request.file_id}' processed successfully for project '{project_id}'.",
+                    "data": {
+                        "chunks": [chunk.page_content for chunk in file_chunks],
+                        "texts": file_content_texts,
+                        "metadata": file_content_metadata
+                    }
+                }
+            )   
 

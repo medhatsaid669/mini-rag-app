@@ -1,6 +1,5 @@
 from urllib import request
-
-from fastapi import APIRouter, FastAPI, Depends, UploadFile, File, status  # pyright: ignore[reportMissingImports]
+from fastapi import APIRouter, FastAPI, Depends, UploadFile, File, status, Request  # pyright: ignore[reportMissingImports]
 from fastapi.responses import JSONResponse  # pyright: ignore[reportMissingImports]
 import os  # pyright: ignore[reportMissingImports]
 from helpers.config import get_settings, Settings # pyright: ignore[reportMissingImports]    
@@ -9,6 +8,10 @@ import aiofiles  # pyright: ignore[reportMissingImports, reportMissingModuleSour
 from models import ResponseSignal
 import logging
 from .schemes.data import ProcessDataRequest  # pyright: ignore[reportMissingImports]   
+from models.ProjectModel import ProjectModel  # pyright: ignore[reportMissingImports, reportUnusedImport]   
+from models.db_schemes.project import Project  # pyright: ignore[reportMissingImports, reportUnusedImport]  
+from models.db_schemes import DataChunk  # pyright: ignore[reportMissingImports, reportUnusedImport]  
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -19,11 +22,28 @@ data_router = APIRouter(
 )
 
 @data_router.post("/upload/{project_id}")
-async def upload_data(project_id: str, file: UploadFile = File(...), 
+async def upload_data(request: Request, project_id: str, file: UploadFile = File(...), 
+        project_model: ProjectModel = Depends(ProjectModel),
         data_controller: DataController = Depends(DataController),
         app_settings: Settings = Depends(get_settings)):
 
-# Validate the file properties based on the settings
+    # Check if the project exists
+    project = project_model.get_project_by_id(project_id)
+    if not project:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "signal": ResponseSignal.ERROR.value,
+                "message": f"Project with ID '{project_id}' not found."
+            }
+        )
+
+    # Delete all existing chunks for this project
+    chunk_model = data_controller.get_chunk_model()
+    deleted_count = chunk_model.delete_chunks_by_project_id(project_id)
+    logging.info(f"Deleted {deleted_count} chunks for project {project_id}")
+
+    # Validate the file properties based on the settings
     is_valid, message = data_controller.validate_uploaded_file(file)
     if not is_valid:
         return JSONResponse(
@@ -63,6 +83,16 @@ async def process_data(project_id: str, request: ProcessDataRequest,
         data_controller: DataController = Depends(DataController),
         app_settings: Settings = Depends(get_settings)): 
 
+        project = data_controller.get_project_by_id(project_id)
+        if not project:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={
+                    "signal": ResponseSignal.ERROR.value,
+                    "message": f"Project with ID '{project_id}' not found."
+                }
+            )       
+
         process_controller = ProcessController(project_id, request.file_id, request.chunk_size, request.overlap_size, request.do_reset)   
         file_content = process_controller.get_file_cotent(request.file_id)
         chunks, file_content_texts, file_content_metadata = process_controller.process_file_content(request.file_id, file_content, request.chunk_size, request.overlap_size)    
@@ -72,12 +102,14 @@ async def process_data(project_id: str, request: ProcessDataRequest,
                 status_code=status.HTTP_200_OK,
                 content={
                     "signal": ResponseSignal.SUCCESS.value,
-                    "message": f"File '{request.file_id}' processed successfully for project '{project_id}'.",
+                    "message": f"File '{request.file_id}' processed successfully into {len(file_chunks)} chunks.",
                     "data": {
-                        "chunks": [chunk.page_content for chunk in file_chunks],
-                        "texts": file_content_texts,
-                        "metadata": file_content_metadata
+                        "file_id": request.file_id,
+                        "chunks": file_chunks,
+                        "file_content_texts": file_content_texts,
+                        "file_content_metadata": file_content_metadata
                     }
                 }
-            )   
+            )
 
+     
